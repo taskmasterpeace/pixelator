@@ -71,18 +71,29 @@ export function imgToCanvas(img: HTMLImageElement | HTMLCanvasElement): HTMLCanv
   return c;
 }
 
-// Slice a sprite sheet (grid, row-major) into per-frame canvases.
+const canvasHasContent = (c: HTMLCanvasElement): boolean => {
+  const d = c.getContext("2d", { willReadFrequently: true })!.getImageData(0, 0, c.width, c.height).data;
+  for (let i = 3; i < d.length; i += 4) if (d[i] > 16) return true;
+  return false;
+};
+
+// Slice a sprite sheet (grid, row-major) into per-frame canvases. RD publishes no grid layout and *could*
+// pad a grid with blank cells, so: derive the grid from the sheet dims, never take more cells than the grid
+// holds, and trim trailing blank cells. Verified against real 6f(3×2)/8f(4×2)/16f(4×4) — all tight, no padding.
 export function sliceToCanvases(img: HTMLImageElement, frames: number, frameW: number, frameH: number): HTMLCanvasElement[] {
   const cols = Math.max(1, Math.round(img.naturalWidth / frameW));
+  const rows = Math.max(1, Math.round(img.naturalHeight / frameH));
+  const n = Math.max(1, Math.min(frames, cols * rows));   // never ask for more frames than the grid holds
   const out: HTMLCanvasElement[] = [];
-  for (let f = 0; f < frames; f++) {
+  for (let f = 0; f < n; f++) {
     const col = f % cols, row = Math.floor(f / cols);
     const c = document.createElement("canvas"); c.width = frameW; c.height = frameH;
     const ctx = c.getContext("2d")!; ctx.imageSmoothingEnabled = false;
     ctx.drawImage(img, col * frameW, row * frameH, frameW, frameH, 0, 0, frameW, frameH);
     out.push(c);
   }
-  return out;
+  let end = out.length; while (end > 1 && !canvasHasContent(out[end - 1])) end--;   // trim trailing blank padding
+  return out.slice(0, end);
 }
 
 function centroid(d: Uint8ClampedArray, w: number, h: number): [number, number, number] {

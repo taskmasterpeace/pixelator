@@ -34,7 +34,7 @@ Sheets come back as a **GRID**, not a strip, and RD publishes no layout — **au
 | `rd_animation__four_angle_walking` | **prompt-driven, NO input_image**; prompt = the **CHARACTER**; `width:48` | **192×192 = 4×4 = 16f** (facings ↓←→↑ × 4) | $0.07 · ~54s |
 | `rd_animation__8_dir_rotation` | prompt-driven | 80px, 8 facings (turntable, not a walk) | ~$0.25 |
 
-`frames_duration` ∈ {4,6,8,10,12,16} (only 8f grid is proven — see issue #3 to verify others). Sizes 64/128/192/256.
+`frames_duration` ∈ {4,6,8,10,12,16}. **Verified grids (tight, no padding, exactly the requested frames):** 6f=3×2 (192×128), 8f=4×2 (256×128), 16f=4×4 (256×256). The slicer derives cols/rows from the sheet dims, clamps to grid capacity, and trims trailing blank cells — robust to any layout. Sizes 64/128/192/256. **RD time is dominated by server load, not size/frames** (6f 78s · 16f 143s · 256px/8f 178s · 64px/8f 211–246s · custom_action 294s), so the countdown uses a flat per-class estimate (200s normal / 300s heavy / 60s top-down).
 
 **Frame resolution follows the INPUT sprite, NOT the `width` param** (verified: 64px source + `size:256` → still 64px frames; 256px source + `size:256` → 1024×512 = 4×2 of true 256px frames). For high-res, generate the source at 256px, then animate at 256. In the app this is automatic — prep builds the sprite at the chosen `size`, so picking Size 256 makes a 256px input → 256px output.
 

@@ -67,10 +67,11 @@ export default function AnimatePage() {
   const [elapsed, setElapsed] = useState(0);
   const timer = useRef(0);
   const playAnimation = useApp((s) => s.playAnimation);
-  // rough time budget for the live countdown — calibrated from real RD runs (64px/8f: attack 246s, walk 211s,
-  // custom_action/backflip 294s). Heavy actions (custom_action/subtle_motion, the $0.25 tier) run longer.
+  // Live-countdown budget. Real RD runs show time is dominated by server variability, NOT size or frame count
+  // (measured: 6f 78s · 16f 143s · 64px/8f 211–246s · 256px/8f 178s · custom_action 294s · four_angle_walking 54s).
+  // So: a flat estimate per class beats a size/frames formula (which badly over-estimated big sizes).
   const heavyAction = action === "custom_action" || action === "subtle_motion";
-  const estSeconds = topdown ? 60 : engine === "pixellab" ? 40 : Math.round(150 + (size / 64) * 45 + (frames / 8) * 35 + (heavyAction ? 60 : 0));
+  const estSeconds = topdown ? 60 : engine === "pixellab" ? 40 : (heavyAction ? 300 : 200);
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.max(0, s % 60)).padStart(2, "0")}`;
 
   // pull the handed-off sprite in
