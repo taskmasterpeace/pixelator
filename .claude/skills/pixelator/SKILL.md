@@ -36,6 +36,8 @@ Sheets come back as a **GRID**, not a strip, and RD publishes no layout — **au
 
 `frames_duration` ∈ {4,6,8,10,12,16} (only 8f grid is proven — see issue #3 to verify others). Sizes 64/128/192/256.
 
+**Frame resolution follows the INPUT sprite, NOT the `width` param** (verified: 64px source + `size:256` → still 64px frames; 256px source + `size:256` → 1024×512 = 4×2 of true 256px frames). For high-res, generate the source at 256px, then animate at 256. In the app this is automatic — prep builds the sprite at the chosen `size`, so picking Size 256 makes a 256px input → 256px output.
+
 ## Prompting rules (from the RD guide + testing)
 
 - **Advanced animations: prompt is MOTION only** — identity comes from `input_image`. Don't restate hair/armor/color (it fights the image). `rd_animation__*` (prompt-driven) is the opposite: prompt describes the **character**.

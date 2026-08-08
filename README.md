@@ -5,11 +5,16 @@ A self-contained **pixel-art studio** — Generate · Pixelate · **Animate** ·
 Give it one sprite → get a clean, **grounded**, transparent sprite-sheet animation.
 
 <p align="center">
-  <img src="docs/media/shark-attack.gif" width="128" alt="shark attack"> &nbsp;
-  <img src="docs/media/shark-walk.gif" width="128" alt="shark walk"> &nbsp;
-  <img src="docs/media/shark-backflip.gif" width="128" alt="shark backflip">
+  <img src="docs/media/shark-attack-256.gif" width="256" alt="256px shark attack">
 </p>
-<p align="center"><em>Real Retro Diffusion output — one generated shark boxer, animated three ways. Attack · Walk · Backflip.</em></p>
+<p align="center"><em>Real Retro Diffusion output — a <b>256px</b> shark boxer, generated then animated (attack, 8 frames). Feet stay grounded, background is clean-transparent.</em></p>
+
+<p align="center">
+  <img src="docs/media/shark-attack.gif" width="112" alt="shark attack"> &nbsp;
+  <img src="docs/media/shark-walk.gif" width="112" alt="shark walk"> &nbsp;
+  <img src="docs/media/shark-backflip.gif" width="112" alt="shark backflip">
+</p>
+<p align="center"><em>Same character, three side-view actions (64px). Attack · Walk · Backflip.</em></p>
 
 ---
 
@@ -72,7 +77,8 @@ Distilled from the [RD API guide](https://retrodiffusion.ai/app/guide/api), the 
 - **A neutral, side-profile, full-body start frame gives the best results.** Mid-action start frames extrapolate poorly.
 - **Weight/speed adverbs are the #1 quality lever** — "slow, heavy steps" / "quick, light" / "confident, steady".
 - **`custom_action` takes a kinematic sentence** — describe the arc phase by phase (crouch → spring → tuck → rotate → land).
-- **Sheets come back as a GRID, not a strip** (8f @ 64px = 256×128 = 4×2). Auto-detect frame width (`cols = round(sheetW / frameW)`); don't hardcode a layout.
+- **Sheets come back as a GRID, not a strip** (8f @ 64px = 256×128 = 4×2; 8f @ 256px = 1024×512 = 4×2). Auto-detect frame width (`cols = round(sheetW / frameW)`); don't hardcode a layout.
+- **Frame resolution follows the INPUT sprite, not the `width` param.** Generate the source at 256px for crisp 256px frames — a 64px source "animated at 256" still yields 64px frames. Generate → Animate at the same size for high-res.
 - **`remove_bg: true`** yields hard 1-bit alpha — clean, aliased pixel edges and reliably transparent frames (better grounding).
 - **RD is slow + async.** Submit `async:true` → poll `tasks/{id}`; result nests under `task.result`. Measured: 64px/8f ≈ 210–250s. Never re-submit a lost job (it re-charges).
 - **Isometric is STATIC only.** `rd_plus__isometric` / `rd_plus__topdown_map` make iso/top-down stills; RD's animation engine is side-view only. For animated top-down there's `rd_animation__four_angle_walking` (48px, 4×4, 16f) and `rd_animation__8_dir_rotation` (turntable, not a walk).
