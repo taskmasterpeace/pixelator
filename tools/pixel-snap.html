@@ -1,0 +1,512 @@
+<title>Pixelator — Pixel Snap Engine</title>
+<style>
+  /* ---- committed single-theme "arcade lab" identity (no purple) ---- */
+  :root{
+    --ink:#0d0f14;        /* ground */
+    --panel:#151922;      /* raised */
+    --panel-2:#1b2130;    /* inset */
+    --line:#262d3b;       /* hairlines */
+    --bone:#e9e5d8;       /* primary text */
+    --bone-dim:#a6a191;   /* muted text */
+    --gold:#f5b21a;       /* accent */
+    --gold-deep:#b9820c;
+    --blood:#ff3b3b;      /* active / destructive */
+    --good:#59d38a;       /* success */
+    --shadow:#000;
+    --mono:ui-monospace,"Cascadia Code","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, #1a2030 0%, transparent 60%),
+      var(--ink);
+    color:var(--bone);
+    font-family:var(--sans);
+    font-size:15px;
+    line-height:1.5;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 20px 60px}
+
+  /* ---- header ---- */
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    border-bottom:2px solid var(--line);padding-bottom:16px;margin-bottom:22px}
+  .brand{display:flex;flex-direction:column;gap:6px}
+  .wordmark{font-family:var(--mono);font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    font-size:26px;color:var(--bone);
+    text-shadow:3px 3px 0 var(--shadow), 3px 3px 0 var(--gold-deep);}
+  .wordmark b{color:var(--gold)}
+  .tag{color:var(--bone-dim);font-size:13px;max-width:56ch}
+  .tag code{font-family:var(--mono);color:var(--gold);background:#0000;padding:0}
+  .recipe{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .chip{font-family:var(--mono);font-size:12px;letter-spacing:.03em;color:var(--bone);
+    background:var(--panel-2);border:1px solid var(--line);padding:6px 9px;border-radius:2px;
+    display:inline-flex;gap:7px;align-items:center;white-space:nowrap}
+  .chip .k{color:var(--bone-dim)}
+  .chip.eng{color:var(--ink);background:var(--gold);border-color:var(--gold);font-weight:700}
+
+  /* ---- workspace ---- */
+  .work{display:grid;grid-template-columns:1fr 320px;gap:18px}
+  @media (max-width:860px){.work{grid-template-columns:1fr}}
+
+  /* stage */
+  .stage-wrap{background:var(--panel);border:2px solid var(--line);border-radius:4px;
+    box-shadow:6px 6px 0 var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+  .stage-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:9px 12px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+  .stage-bar .lbl{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--bone-dim)}
+  .zoom{font-family:var(--mono);font-size:12px;color:var(--gold);min-width:54px;text-align:right}
+  .stage{position:relative;flex:1;min-height:440px;display:grid;place-items:center;padding:26px;
+    /* checkerboard = transparency */
+    background-color:#0b0d12;
+    background-image:
+      linear-gradient(45deg,#171b24 25%,transparent 25%),
+      linear-gradient(-45deg,#171b24 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#171b24 75%),
+      linear-gradient(-45deg,transparent 75%,#171b24 75%);
+    background-size:24px 24px;
+    background-position:0 0,0 12px,12px -12px,-12px 0;}
+  .stage canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:block;
+    box-shadow:0 0 0 1px #0006, 0 10px 30px #000a}
+  /* CRT scanline veil */
+  .stage::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg, #0000 0 2px, #00000022 2px 3px);
+    mix-blend-mode:multiply;opacity:.5}
+  .drop-hint{position:absolute;inset:0;display:grid;place-items:center;text-align:center;
+    font-family:var(--mono);color:var(--bone-dim);font-size:13px;letter-spacing:.05em;pointer-events:none}
+  .stage.drag{outline:2px dashed var(--gold);outline-offset:-8px}
+
+  /* control rail */
+  .rail{display:flex;flex-direction:column;gap:14px}
+  .card{background:var(--panel);border:2px solid var(--line);border-radius:4px;
+    box-shadow:6px 6px 0 var(--shadow);padding:14px}
+  .card h3{margin:0 0 12px;font-family:var(--mono);font-size:12px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--bone-dim);font-weight:700;
+    display:flex;align-items:center;gap:8px}
+  .card h3::before{content:"";width:8px;height:8px;background:var(--gold);display:inline-block;box-shadow:2px 2px 0 var(--shadow)}
+
+  .field{margin-bottom:14px}
+  .field:last-child{margin-bottom:0}
+  .field .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .field label{font-size:13px;color:var(--bone)}
+  .field .val{font-family:var(--mono);font-size:12px;color:var(--gold)}
+  input[type=range]{width:100%;accent-color:var(--gold);height:20px}
+  .seg{display:flex;gap:0;border:1px solid var(--line);border-radius:2px;overflow:hidden}
+  .seg button{flex:1;background:var(--panel-2);color:var(--bone-dim);border:0;padding:8px 4px;
+    font-family:var(--mono);font-size:12px;cursor:pointer;border-right:1px solid var(--line)}
+  .seg button:last-child{border-right:0}
+  .seg button[aria-pressed=true]{background:var(--gold);color:var(--ink);font-weight:700}
+  .seg button:focus-visible{outline:2px solid var(--bone);outline-offset:-2px}
+
+  .toggle{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;user-select:none}
+  .switch{width:44px;height:24px;background:var(--panel-2);border:1px solid var(--line);border-radius:2px;position:relative;flex:none;transition:background .15s}
+  .switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;background:var(--bone-dim);transition:.15s}
+  .toggle[aria-pressed=true] .switch{background:var(--blood)}
+  .toggle[aria-pressed=true] .switch::after{left:22px;background:var(--bone)}
+
+  .btns{display:flex;flex-direction:column;gap:9px}
+  button.act{font-family:var(--mono);font-size:13px;letter-spacing:.06em;text-transform:uppercase;
+    cursor:pointer;padding:11px;border-radius:2px;border:2px solid var(--shadow);
+    box-shadow:3px 3px 0 var(--shadow);transition:transform .05s, box-shadow .05s}
+  button.act:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--shadow)}
+  button.act:focus-visible{outline:2px solid var(--bone);outline-offset:2px}
+  button.primary{background:var(--gold);color:var(--ink);font-weight:700;border-color:var(--gold-deep)}
+  button.ghost{background:var(--panel-2);color:var(--bone)}
+  button.ghost:disabled{opacity:.4;cursor:not-allowed}
+
+  .palette{display:flex;flex-wrap:wrap;gap:4px}
+  .sw{width:22px;height:22px;border:1px solid #0008;box-shadow:2px 2px 0 var(--shadow)}
+  .pal-empty{font-family:var(--mono);font-size:12px;color:var(--bone-dim)}
+
+  .foot{margin-top:26px;color:var(--bone-dim);font-size:12px;line-height:1.6;border-top:1px solid var(--line);padding-top:14px}
+  .foot code{font-family:var(--mono);color:var(--gold)}
+  .foot b{color:var(--bone)}
+  .hidden{display:none}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="wordmark">PIXEL<b>ATOR</b> · SNAP ENGINE</div>
+      <div class="tag">The deterministic cleanup stage of an AI-sprite pipeline — <b>downsample → quantize → corner-key transparency</b>, then the pixel-by-pixel reveal. Drop any image (a raw AI sprite, a photo, a render). No account, no server. <code>runs entirely in your browser</code></div>
+    </div>
+    <div class="recipe" id="recipe">
+      <span class="chip eng">⚙ pixel-snap-v0</span>
+      <span class="chip"><span class="k">size</span> <span id="r-size">64×64</span></span>
+      <span class="chip"><span class="k">colors</span> <span id="r-col">16</span></span>
+      <span class="chip" id="r-bg"><span class="k">bg</span> <span id="r-bgv">transparent</span></span>
+    </div>
+  </header>
+
+  <div class="work">
+    <div class="stage-wrap">
+      <div class="stage-bar">
+        <span class="lbl" id="stage-lbl">Result</span>
+        <span class="zoom" id="zoom">—</span>
+      </div>
+      <div class="stage" id="stage">
+        <canvas id="view" width="512" height="512"></canvas>
+        <div class="drop-hint" id="hint">drop an image here<br>— or load the sample —</div>
+      </div>
+    </div>
+
+    <div class="rail">
+      <div class="card">
+        <h3>Source</h3>
+        <div class="btns">
+          <button class="act primary" id="pick">Choose image…</button>
+          <button class="act ghost" id="sample">Load demo sprite</button>
+        </div>
+        <input type="file" id="file" accept="image/png,image/jpeg,image/webp,image/gif" class="hidden">
+      </div>
+
+      <div class="card">
+        <h3>Recipe</h3>
+        <div class="field">
+          <div class="row"><label for="size">Target size</label><span class="val" id="v-size">64 px</span></div>
+          <input type="range" id="size" min="16" max="160" step="8" value="64">
+        </div>
+        <div class="field">
+          <div class="row"><label for="colors">Palette colors</label><span class="val" id="v-colors">16</span></div>
+          <input type="range" id="colors" min="4" max="64" step="2" value="16">
+        </div>
+        <div class="field">
+          <div class="row"><label>Downsample</label></div>
+          <div class="seg" id="mode">
+            <button data-mode="area" aria-pressed="true">Area avg</button>
+            <button data-mode="dominant" aria-pressed="false">Dominant</button>
+            <button data-mode="nearest" aria-pressed="false">Nearest</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="toggle" id="t-bg" role="button" tabindex="0" aria-pressed="true">
+            <label>Remove background <span style="color:var(--bone-dim)">(corner key)</span></label>
+            <span class="switch"></span>
+          </div>
+        </div>
+        <div class="field" id="tol-field">
+          <div class="row"><label for="tol">BG tolerance</label><span class="val" id="v-tol">32</span></div>
+          <input type="range" id="tol" min="0" max="120" step="2" value="32">
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Actions</h3>
+        <div class="btns">
+          <button class="act primary" id="run" disabled>▶ Snap it</button>
+          <button class="act ghost" id="replay" disabled>↻ Replay reveal</button>
+          <button class="act ghost" id="export" disabled>⇩ Export PNG</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Extracted palette</h3>
+        <div class="palette" id="palette"><span class="pal-empty">— run to extract —</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>What this is.</b> The "clean AI output into true pixel art" stage that runs <i>after</i> the model. Pipeline, all client-side: fit-and-downsample to the target grid → <b>median-cut</b> quantize to N colors → flood-fill the background from the four corners within a color tolerance (so interior details of the same color are preserved) → nearest-neighbor upscale for preview. The generation-complete "reconstruction" shimmer is a cosmetic canvas reveal (diagonal sweep + per-pixel fade), not part of the model.<br>
+    <b>Note.</b> The corner-key handles the common transparent-on-flat-background case; some models return native alpha instead. Algorithm is original (MIT-spirit).
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const view = $("view"), vctx = view.getContext("2d");
+  const stage = $("stage");
+  const state = {
+    srcCanvas: null,           // full-res source
+    result: null,             // {data:ImageData, w, h}
+    size: 64, colors: 16, mode: "area", removeBg: true, tol: 32,
+    reduceMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
+  };
+
+  /* ---------- source loading ---------- */
+  function setSource(img){
+    const c = document.createElement("canvas");
+    // cap huge inputs for speed
+    const cap = 1024, scale = Math.min(1, cap/Math.max(img.width, img.height));
+    c.width = Math.max(1, Math.round(img.width*scale));
+    c.height = Math.max(1, Math.round(img.height*scale));
+    c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+    state.srcCanvas = c;
+    $("run").disabled = false;
+    $("hint").classList.add("hidden");
+    run(); // auto-run on load
+  }
+  function loadFile(file){
+    if(!file) return;
+    const img = new Image();
+    img.onload = () => setSource(img);
+    img.onerror = () => flash("Couldn't read that image — try a PNG or JPEG.");
+    img.src = URL.createObjectURL(file);
+  }
+  $("pick").onclick = () => $("file").click();
+  $("file").onchange = e => loadFile(e.target.files[0]);
+
+  // drag & drop
+  ["dragenter","dragover"].forEach(ev => stage.addEventListener(ev, e => {e.preventDefault(); stage.classList.add("drag");}));
+  ["dragleave","drop"].forEach(ev => stage.addEventListener(ev, e => {e.preventDefault(); if(ev!=="dragover") stage.classList.remove("drag");}));
+  stage.addEventListener("drop", e => {
+    const f = [...(e.dataTransfer.files||[])].find(f => f.type.startsWith("image/"));
+    if(f) loadFile(f);
+  });
+
+  /* ---------- demo sprite (smooth, anti-aliased → something to actually clean) ---------- */
+  $("sample").onclick = () => {
+    const s = 320, c = document.createElement("canvas"); c.width=c.height=s;
+    const x = c.getContext("2d");
+    // flat teal background (the "key")
+    x.fillStyle = "#1f6f6a"; x.fillRect(0,0,s,s);
+    // a glossy gem: smooth radial gradients + highlights (anti-aliased edges)
+    x.translate(s/2, s/2+10);
+    const gem = new Path2D();
+    const pts = [[0,-110],[92,-40],[60,96],[-60,96],[-92,-40]];
+    gem.moveTo(pts[0][0],pts[0][1]); pts.slice(1).forEach(p=>gem.lineTo(p[0],p[1])); gem.closePath();
+    let g = x.createLinearGradient(-90,-110,90,110);
+    g.addColorStop(0,"#ff5db1"); g.addColorStop(.5,"#c81e6b"); g.addColorStop(1,"#7a0f45");
+    x.fillStyle=g; x.fill(gem);
+    // facet highlights
+    x.strokeStyle="rgba(255,255,255,.55)"; x.lineWidth=4; x.lineJoin="round";
+    x.beginPath(); x.moveTo(0,-110); x.lineTo(0,40); x.lineTo(60,96); x.moveTo(0,40); x.lineTo(-60,96); x.stroke();
+    let hl = x.createRadialGradient(-30,-50,4,-30,-50,70);
+    hl.addColorStop(0,"rgba(255,255,255,.9)"); hl.addColorStop(1,"rgba(255,255,255,0)");
+    x.fillStyle=hl; x.beginPath(); x.arc(-30,-50,60,0,7); x.fill();
+    // soft ground shadow (tests bg removal robustness)
+    x.setTransform(1,0,0,1,0,0);
+    let sh = x.createRadialGradient(s/2,s-40,4,s/2,s-40,120);
+    sh.addColorStop(0,"rgba(0,0,0,.35)"); sh.addColorStop(1,"rgba(0,0,0,0)");
+    x.fillStyle=sh; x.beginPath(); x.ellipse(s/2,s-42,110,26,0,0,7); x.fill();
+    const img = new Image(); img.onload=()=>setSource(img); img.src=c.toDataURL();
+  };
+
+  /* ---------- controls ---------- */
+  $("size").oninput = e => { state.size=+e.target.value; $("v-size").textContent=state.size+" px"; $("r-size").textContent=state.size+"×"+state.size; run(); };
+  $("colors").oninput = e => { state.colors=+e.target.value; $("v-colors").textContent=state.colors; $("r-col").textContent=state.colors; run(); };
+  $("tol").oninput = e => { state.tol=+e.target.value; $("v-tol").textContent=state.tol; run(); };
+  $("mode").querySelectorAll("button").forEach(b => b.onclick = () => {
+    state.mode=b.dataset.mode;
+    $("mode").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed", x===b));
+    run();
+  });
+  const tbg = $("t-bg");
+  function toggleBg(){
+    state.removeBg = !state.removeBg;
+    tbg.setAttribute("aria-pressed", state.removeBg);
+    $("tol-field").style.opacity = state.removeBg ? 1 : .35;
+    $("r-bgv").textContent = state.removeBg ? "transparent" : "opaque";
+    run();
+  }
+  tbg.onclick = toggleBg;
+  tbg.onkeydown = e => { if(e.key===" "||e.key==="Enter"){e.preventDefault(); toggleBg();} };
+  $("run").onclick = () => run(true);
+  $("replay").onclick = () => { if(state.result) reveal(state.result); };
+  $("export").onclick = exportPng;
+
+  /* ---------- the engine ---------- */
+  function run(force){
+    if(!state.srcCanvas) return;
+    const res = snap(state.srcCanvas, state);
+    state.result = res;
+    drawPalette(res.palette);
+    $("replay").disabled = false; $("export").disabled = false;
+    if(state.reduceMotion) blit(res); else reveal(res);
+  }
+
+  // fit longest side to target, preserve aspect
+  function targetDims(sw, sh, size){
+    const scale = size/Math.max(sw,sh);
+    return [Math.max(1,Math.round(sw*scale)), Math.max(1,Math.round(sh*scale))];
+  }
+
+  function snap(src, {size, colors, mode, removeBg, tol}){
+    const [w,h] = targetDims(src.width, src.height, size);
+    // 1) downsample
+    const small = document.createElement("canvas"); small.width=w; small.height=h;
+    const sc = small.getContext("2d",{willReadFrequently:true});
+    if(mode==="dominant"){
+      dominantDownsample(src, sc, w, h);
+    } else {
+      sc.imageSmoothingEnabled = (mode==="area");
+      sc.imageSmoothingQuality = "high";
+      sc.drawImage(src, 0, 0, w, h);
+    }
+    const img = sc.getImageData(0,0,w,h);
+    // 2) quantize (median cut) over opaque pixels
+    const palette = medianCut(img.data, colors);
+    mapToPalette(img.data, palette);
+    // 3) background removal via corner flood-fill
+    if(removeBg) cornerKey(img, tol);
+    return {data:img, w, h, palette};
+  }
+
+  // dominant-color downsample: most frequent (coarsely-binned) source color per output cell
+  function dominantDownsample(src, dctx, w, h){
+    const sctx = src.getContext("2d",{willReadFrequently:true});
+    const sd = sctx.getImageData(0,0,src.width,src.height).data;
+    const out = dctx.createImageData(w,h);
+    const cw = src.width/w, ch = src.height/h;
+    for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+      const x0=Math.floor(x*cw), x1=Math.min(src.width, Math.ceil((x+1)*cw));
+      const y0=Math.floor(y*ch), y1=Math.min(src.height, Math.ceil((y+1)*ch));
+      const hist=new Map(); let ar=0,ag=0,ab=0,aa=0,n=0;
+      for(let sy=y0;sy<y1;sy++) for(let sx=x0;sx<x1;sx++){
+        const i=(sy*src.width+sx)*4, a=sd[i+3];
+        const key=((sd[i]>>4)<<8)|((sd[i+1]>>4)<<4)|(sd[i+2]>>4);
+        const e=hist.get(key)||[0,0,0,0,0]; e[0]+=sd[i];e[1]+=sd[i+1];e[2]+=sd[i+2];e[3]+=a;e[4]++; hist.set(key,e);
+        aa+=a; n++;
+      }
+      let best=null,bc=-1; for(const e of hist.values()) if(e[4]>bc){bc=e[4];best=e;}
+      const o=(y*w+x)*4;
+      out.data[o]=best[0]/best[4]; out.data[o+1]=best[1]/best[4]; out.data[o+2]=best[2]/best[4];
+      out.data[o+3]= n? Math.round(aa/n):0;
+    }
+    dctx.putImageData(out,0,0);
+  }
+
+  // ---- median cut ----
+  function medianCut(data, n){
+    const px=[];
+    for(let i=0;i<data.length;i+=4){ if(data[i+3]>16) px.push([data[i],data[i+1],data[i+2]]); }
+    if(px.length===0) return [[0,0,0]];
+    let boxes=[px];
+    while(boxes.length<n){
+      // pick box with largest channel range
+      let bi=-1,brange=-1;
+      boxes.forEach((b,idx)=>{ if(b.length<2) return; const r=boxRange(b); if(r.range>brange){brange=r.range;bi=idx;} });
+      if(bi<0) break;
+      const b=boxes[bi], {ch}=boxRange(b);
+      b.sort((p,q)=>p[ch]-q[ch]);
+      const mid=b.length>>1;
+      boxes.splice(bi,1,b.slice(0,mid),b.slice(mid));
+    }
+    return boxes.map(b=>{
+      let r=0,g=0,bl=0; for(const p of b){r+=p[0];g+=p[1];bl+=p[2];}
+      const k=b.length||1; return [Math.round(r/k),Math.round(g/k),Math.round(bl/k)];
+    });
+  }
+  function boxRange(b){
+    let mn=[255,255,255],mx=[0,0,0];
+    for(const p of b) for(let c=0;c<3;c++){ if(p[c]<mn[c])mn[c]=p[c]; if(p[c]>mx[c])mx[c]=p[c]; }
+    const r=[mx[0]-mn[0],mx[1]-mn[1],mx[2]-mn[2]];
+    const ch=r[0]>=r[1]&&r[0]>=r[2]?0:(r[1]>=r[2]?1:2);
+    return {range:r[ch],ch};
+  }
+  function mapToPalette(data, pal){
+    for(let i=0;i<data.length;i+=4){
+      if(data[i+3]<=16){continue;}
+      let best=0,bd=1e9;
+      for(let p=0;p<pal.length;p++){
+        const dr=data[i]-pal[p][0],dg=data[i+1]-pal[p][1],db=data[i+2]-pal[p][2];
+        const d=dr*dr+dg*dg+db*db; if(d<bd){bd=d;best=p;}
+      }
+      data[i]=pal[best][0]; data[i+1]=pal[best][1]; data[i+2]=pal[best][2];
+    }
+  }
+
+  // ---- corner-key background removal (multi-source flood fill) ----
+  function cornerKey(img, tol){
+    const {width:w,height:h,data}=img, t2=tol*tol*3;
+    const bg=new Uint8Array(w*h);
+    const seeds=[[0,0],[w-1,0],[0,h-1],[w-1,h-1]];
+    const stack=[];
+    for(const [sx,sy] of seeds){
+      const si=(sy*w+sx);
+      const sr=data[si*4],sg=data[si*4+1],sb=data[si*4+2];
+      if(bg[si]) continue;
+      stack.length=0; stack.push(si);
+      while(stack.length){
+        const p=stack.pop(); if(bg[p]) continue;
+        const i=p*4;
+        const dr=data[i]-sr,dg=data[i+1]-sg,db=data[i+2]-sb;
+        if(dr*dr+dg*dg+db*db>t2) continue;
+        bg[p]=1;
+        const px=p%w, py=(p-px)/w;
+        if(px>0)stack.push(p-1); if(px<w-1)stack.push(p+1);
+        if(py>0)stack.push(p-w); if(py<h-1)stack.push(p+w);
+      }
+    }
+    for(let p=0;p<w*h;p++) if(bg[p]) data[p*4+3]=0;
+  }
+
+  /* ---------- rendering ---------- */
+  function fitScale(w,h){
+    const box=Math.min(stage.clientWidth-52, stage.clientHeight-52, 520);
+    return Math.max(1, Math.floor(box/Math.max(w,h)));
+  }
+  function prep(res){
+    const scale=fitScale(res.w,res.h);
+    view.width=res.w*scale; view.height=res.h*scale;
+    vctx.imageSmoothingEnabled=false;
+    $("zoom").textContent=(scale*100)+"%";
+    return scale;
+  }
+  const tiny=document.createElement("canvas"), tctx=tiny.getContext("2d");
+  function blit(res){
+    const scale=prep(res);
+    tiny.width=res.w; tiny.height=res.h;
+    tctx.putImageData(res.data,0,0);
+    vctx.clearRect(0,0,view.width,view.height);
+    vctx.drawImage(tiny,0,0,view.width,view.height);
+  }
+
+  let raf=0;
+  function reveal(res){
+    cancelAnimationFrame(raf);
+    const scale=prep(res);
+    tiny.width=res.w; tiny.height=res.h;
+    const src=res.data.data, W=res.w, H=res.h;
+    const band=0.22, dur=820, t0=performance.now();
+    const frame=(now)=>{
+      const t=Math.min(1,(now-t0)/dur);
+      const buf=tctx.createImageData(W,H), d=buf.data;
+      for(let y=0;y<H;y++) for(let x=0;x<W;x++){
+        const i=(y*W+x)*4;
+        const diag=((x/(W-1||1))+(y/(H-1||1)))/2;              // 0 topleft → 1 bottomright
+        let a=(t-diag)/band;                                    // ramp behind the sweep
+        a=a<=0?0:a>=1?1:a;
+        d[i]=src[i]; d[i+1]=src[i+1]; d[i+2]=src[i+2];
+        d[i+3]=Math.round(src[i+3]*a*a*(3-2*a));                // smoothstep fade-in
+      }
+      tctx.putImageData(buf,0,0);
+      vctx.clearRect(0,0,view.width,view.height);
+      vctx.drawImage(tiny,0,0,view.width,view.height);
+      if(t<1) raf=requestAnimationFrame(frame); else blit(res);
+    };
+    raf=requestAnimationFrame(frame);
+  }
+
+  function drawPalette(pal){
+    const el=$("palette"); el.innerHTML="";
+    if(!pal||!pal.length){el.innerHTML='<span class="pal-empty">— run to extract —</span>';return;}
+    pal.slice().sort((a,b)=>(a[0]+a[1]+a[2])-(b[0]+b[1]+b[2])).forEach(c=>{
+      const s=document.createElement("div"); s.className="sw";
+      s.style.background=`rgb(${c[0]},${c[1]},${c[2]})`;
+      s.title=`#${c.map(v=>v.toString(16).padStart(2,"0")).join("")}`;
+      el.appendChild(s);
+    });
+  }
+
+  function exportPng(){
+    if(!state.result) return;
+    const {data,w,h}=state.result;
+    const c=document.createElement("canvas"); c.width=w; c.height=h;
+    c.getContext("2d").putImageData(data,0,0);
+    const a=document.createElement("a");
+    a.download=`pixelator_${w}x${h}_${state.colors}c.png`;
+    a.href=c.toDataURL("image/png"); a.click();
+  }
+
+  function flash(msg){ $("hint").classList.remove("hidden"); $("hint").innerHTML=msg; }
+
+  // resize keeps preview crisp
+  let rt=0; addEventListener("resize",()=>{clearTimeout(rt); rt=setTimeout(()=>{ if(state.result) blit(state.result); },120);});
+})();
+</script>
