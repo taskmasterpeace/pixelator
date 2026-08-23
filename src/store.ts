@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type Tab = "home" | "generate" | "pixelate" | "animate" | "voxelize" | "tiles" | "library";
+export type Tab = "home" | "generate" | "pixelate" | "animate" | "forge" | "voxelize" | "tiles" | "library";
 
 interface AppState {
   tab: Tab;

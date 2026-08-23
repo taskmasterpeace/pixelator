@@ -4,9 +4,22 @@ import test from "node:test";
 import {
   FORGE_DIRECTIONS,
   directionFromVector,
+  inspectPngHeader,
   validateForgeManifest,
   type ForgeManifest,
 } from "./characterForge.ts";
+
+function pngHeader(width: number, height: number, colorType: number): Uint8Array {
+  const bytes = new Uint8Array(33);
+  bytes.set([137, 80, 78, 71, 13, 10, 26, 10], 0);
+  bytes.set([0, 0, 0, 13, 73, 72, 68, 82], 8);
+  const view = new DataView(bytes.buffer);
+  view.setUint32(16, width);
+  view.setUint32(20, height);
+  bytes[24] = 8;
+  bytes[25] = colorType;
+  return bytes;
+}
 
 test("classifies all eight orthographic movement sectors in canonical sheet order", () => {
   const vectors = [
@@ -82,4 +95,21 @@ test("rejects a manifest that does not contain four frames per direction", () =>
   } as ForgeManifest;
 
   assert.match(validateForgeManifest(invalid)[0], /four frames/i);
+});
+
+test("reads PNG dimensions and alpha support before a forge upload", () => {
+  assert.deepEqual(inspectPngHeader(pngHeader(96, 128, 6)), {
+    width: 96,
+    height: 128,
+    hasAlpha: true,
+  });
+  assert.deepEqual(inspectPngHeader(pngHeader(256, 192, 2)), {
+    width: 256,
+    height: 192,
+    hasAlpha: false,
+  });
+});
+
+test("rejects bytes that are not a PNG image", () => {
+  assert.throws(() => inspectPngHeader(new Uint8Array(33)), /valid png/i);
 });

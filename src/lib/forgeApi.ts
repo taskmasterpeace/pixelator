@@ -34,9 +34,31 @@ export interface ForgeHealth {
 
 export interface ForgeCharacterInput {
   name: string;
+  sourceName?: string;
   description: string;
   referenceImage: string;
   seed: number;
+}
+
+export interface ForgeAnimationDirection {
+  direction: ForgeDirection;
+  frame_count: number;
+  frames: string[];
+}
+
+export interface ForgeAnimationGroup {
+  animation_type: string;
+  display_name?: string | null;
+  animation_group_id?: string | null;
+  directions: ForgeAnimationDirection[];
+}
+
+export interface ForgeCharacterDetail {
+  id: string;
+  name: string;
+  status: string;
+  rotation_urls: Partial<Record<ForgeDirection, string>>;
+  animations: ForgeAnimationGroup[];
 }
 
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;

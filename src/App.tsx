@@ -5,6 +5,7 @@ import HomePage from "./pages/HomePage";
 import PixelatePage from "./pages/PixelatePage";
 import GeneratePage from "./pages/GeneratePage";
 import AnimatePage from "./pages/AnimatePage";
+import CharacterForgePage from "./pages/CharacterForgePage";
 import VoxelizePage from "./pages/VoxelizePage";
 import TilesPage from "./pages/TilesPage";
 import LibraryPage from "./pages/LibraryPage";
@@ -17,6 +18,7 @@ const NAV: { group: string; items: { id: Tab; ico: string; label: string; tag?: 
   { group: "AI Tools", items: [
     { id: "generate", ico: "✦", label: "Generate", tag: "RD" },
     { id: "animate", ico: "▶", label: "Animate", tag: "RD" },
+    { id: "forge", ico: "✥", label: "Character Forge", tag: "8-DIR" },
     { id: "voxelize", ico: "◈", label: "Voxelize", tag: "3D" },
     { id: "tiles", ico: "◫", label: "Tiles", tag: "RD" },
   ] },
@@ -60,6 +62,7 @@ export default function App() {
         {tab === "pixelate" && <PixelatePage />}
         {tab === "generate" && <GeneratePage />}
         {tab === "animate" && <AnimatePage />}
+        {tab === "forge" && <CharacterForgePage />}
         {tab === "voxelize" && <VoxelizePage />}
         {tab === "tiles" && <TilesPage />}
         {tab === "library" && <LibraryPage />}

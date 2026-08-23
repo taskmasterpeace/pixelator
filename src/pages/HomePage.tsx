@@ -4,6 +4,7 @@ const CARDS: { id: Tab; ico: string; title: string; desc: string }[] = [
   { id: "generate", ico: "✦", title: "Generate", desc: "Prompt → pixel sprite on Retro Diffusion, cleaned to a transparent grid." },
   { id: "pixelate", ico: "▦", title: "Pixelate", desc: "Drop any image → clean pixel art. Downsample, quantize, corner-key transparency." },
   { id: "animate", ico: "▶", title: "Animate", desc: "Turn a sprite into an N-frame sprite sheet — walk, idle, attack." },
+  { id: "forge", ico: "✥", title: "Character Forge", desc: "Lock one identity, review eight top-down facings, then export a playable 4-frame walk." },
   { id: "tiles", ico: "◫", title: "Tiles", desc: "Seamless tilesets for top-down & sidescroller maps." },
 ];
 

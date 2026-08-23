@@ -11,6 +11,23 @@ export const FORGE_DIRECTIONS = [
 
 export type ForgeDirection = (typeof FORGE_DIRECTIONS)[number];
 
+export function inspectPngHeader(bytes: Uint8Array): {
+  width: number;
+  height: number;
+  hasAlpha: boolean;
+} {
+  const signature = [137, 80, 78, 71, 13, 10, 26, 10];
+  const hasSignature = bytes.length >= 26 && signature.every((value, index) => bytes[index] === value);
+  const hasIhdr = hasSignature && bytes[12] === 73 && bytes[13] === 72 && bytes[14] === 68 && bytes[15] === 82;
+  if (!hasIhdr) throw new Error("The selected file is not a valid PNG image.");
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const width = view.getUint32(16);
+  const height = view.getUint32(20);
+  if (width < 1 || height < 1) throw new Error("The PNG image has invalid dimensions.");
+  const colorType = bytes[25];
+  return { width, height, hasAlpha: colorType === 4 || colorType === 6 };
+}
+
 export interface ForgeManifest {
   schemaVersion: 1;
   characterId: string;
