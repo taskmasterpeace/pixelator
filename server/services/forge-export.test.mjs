@@ -60,8 +60,8 @@ async function makeFixture({ emptyUrl = null, offPaletteUrl = null, framesPerDir
         `https://assets.test/rotation-${direction}.png`,
       ])),
       animations: [{
-        animation_type: "walk-8dir-4f",
-        display_name: "Walk · 8 directions · 4 frames",
+        animation_type: "custom-Walking with restrained surviv",
+        display_name: "walk-8dir-4f",
         animation_group_id: "animation-group-1",
         directions,
       }],

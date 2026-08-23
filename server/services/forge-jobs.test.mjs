@@ -229,3 +229,44 @@ test("exports with the retained source identity and latest walk prompt", async (
   assert.equal(exported.manifest.seed, 230823);
   assert.deepEqual(exported.manifest.source, { name: "road-survivor-original.png", bytes: 6 });
 });
+
+test("reattaches a local source to an existing provider character without regenerating", async () => {
+  const service = createForgeService({
+    pixelLab: {
+      async getCharacter() {
+        return { id: "provider-character-1", rotation_urls: {}, animations: [] };
+      },
+    },
+    async exportCharacter(input) {
+      return {
+        zipBuffer: Buffer.from("zip"),
+        manifest: {
+          characterId: input.characterId,
+          runId: input.runId,
+          prompt: input.prompt,
+          sourceName: input.source.name,
+          sourceBytes: input.source.buffer.length,
+        },
+      };
+    },
+  });
+
+  service.recoverCharacterSource("provider-character-1", {
+    name: "road-survivor",
+    runId: "identity-run-recovered",
+    sourceName: "road-survivor.png",
+    referenceImage: "data:image/png;base64,c291cmNl",
+    description: "worn road survivor",
+    seed: 230823,
+    walkPrompt: "walking with restrained survival weight",
+  });
+
+  const exported = await service.exportCharacter("provider-character-1");
+  assert.deepEqual(exported.manifest, {
+    characterId: "road-survivor",
+    runId: "identity-run-recovered",
+    prompt: "walking with restrained survival weight",
+    sourceName: "road-survivor.png",
+    sourceBytes: 6,
+  });
+});

@@ -141,7 +141,8 @@ export function createForgeService({
     walkSettings.set(job.characterId, { prompt: input.prompt, seed: input.seed });
     const animation = (character.animations || []).find((candidate) =>
       candidate.animation_type === "walk-8dir-4f" ||
-      candidate.display_name === "Walk · 8 directions · 4 frames",
+      candidate.display_name === "Walk · 8 directions · 4 frames" ||
+      candidate.display_name === "walk-8dir-4f",
     );
     update(job, {
       status: "succeeded",
@@ -208,6 +209,32 @@ export function createForgeService({
       if (!configured) return { configured: false, provider: "pixellab-v2" };
       const balance = await pixelLab.getBalance();
       return { configured: true, provider: "pixellab-v2", balance };
+    },
+
+    recoverCharacterSource(characterId, input) {
+      const encoded = String(input.referenceImage || "").replace(
+        /^data:image\/[a-z0-9.+-]+;base64,/iu,
+        "",
+      );
+      const sourceBuffer = Buffer.from(encoded, "base64");
+      if (!input.name || !input.runId || !input.sourceName || sourceBuffer.length === 0) {
+        const error = new Error("Character recovery requires a name, run ID, source name, and PNG source.");
+        error.code = "INVALID_RECOVERY_SOURCE";
+        error.status = 400;
+        throw error;
+      }
+      sourceRuns.set(characterId, {
+        characterId: input.name,
+        runId: input.runId,
+        source: { name: input.sourceName, buffer: sourceBuffer },
+        prompt: input.description || "Recovered character source",
+        seed: input.seed,
+      });
+      if (input.walkPrompt) {
+        walkSettings.set(characterId, { prompt: input.walkPrompt, seed: input.seed });
+      }
+      exportsByCharacter.delete(characterId);
+      return { characterId, runId: input.runId, sourceName: input.sourceName };
     },
 
     async exportCharacter(characterId, options = {}) {

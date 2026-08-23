@@ -57,7 +57,8 @@ function validationFailure(errors) {
 function animationForCharacter(character) {
   return (character.animations || []).find((animation) =>
     animation.animation_type === "walk-8dir-4f" ||
-    animation.display_name === "Walk · 8 directions · 4 frames",
+    animation.display_name === "Walk · 8 directions · 4 frames" ||
+    animation.display_name === "walk-8dir-4f",
   );
 }
 

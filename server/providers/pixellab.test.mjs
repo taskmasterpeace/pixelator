@@ -72,7 +72,6 @@ test("submits one v3 walk request covering all eight orthographic directions", a
   assert.deepEqual(JSON.parse(calls[0].init.body), {
     character_id: "character-1",
     animation_name: "walk-8dir-4f",
-    display_name: "Walk · 8 directions · 4 frames",
     action_description: "walking with restrained survival weight",
     mode: "v3",
     frame_count: 4,

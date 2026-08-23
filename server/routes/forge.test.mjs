@@ -258,3 +258,32 @@ test("downloads a validated forge package as a named ZIP", async () => {
     assert.equal(Buffer.from(await response.arrayBuffer()).toString("utf8"), "validated-forge-package");
   });
 });
+
+test("reattaches provenance for an existing character without a provider generation", async () => {
+  let recovered = null;
+  const service = {
+    isConfigured: true,
+    recoverCharacterSource(characterId, input) {
+      recovered = { characterId, input };
+      return { characterId, runId: input.runId };
+    },
+  };
+
+  await withServer(service, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/forge/characters/character-1/source`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        name: "road-survivor",
+        runId: "identity-run-1",
+        sourceName: "road-survivor.png",
+        referenceImage: "data:image/png;base64,c291cmNl",
+        description: "worn road survivor",
+        seed: 230823,
+      }),
+    });
+    assert.equal(response.status, 200);
+    assert.equal(recovered.characterId, "character-1");
+    assert.equal(recovered.input.runId, "identity-run-1");
+  });
+});

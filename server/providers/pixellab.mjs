@@ -139,7 +139,6 @@ export function createPixelLabClient({
         body: {
           character_id: characterId,
           animation_name: "walk-8dir-4f",
-          display_name: "Walk · 8 directions · 4 frames",
           action_description: prompt,
           mode: "v3",
           frame_count: 4,

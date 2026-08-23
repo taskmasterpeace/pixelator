@@ -61,6 +61,15 @@ export function registerForgeRoutes(app, service) {
     return response.status(202).json(job);
   });
 
+  app.post("/api/forge/characters/:id/source", (request, response) => {
+    if (!service.isConfigured) return unavailable(response);
+    try {
+      return response.json(service.recoverCharacterSource(request.params.id, request.body || {}));
+    } catch (error) {
+      return sendError(response, error);
+    }
+  });
+
   app.get("/api/forge/characters/:id/export", async (request, response) => {
     if (!service.isConfigured) return unavailable(response);
     try {
