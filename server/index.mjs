@@ -3,6 +3,9 @@
 // Falls back to MOCK mode (procedural sprites) when no key is set, so the UI always works.
 import express from "express";
 import zlib from "node:zlib";
+import { createPixelLabClient } from "./providers/pixellab.mjs";
+import { registerForgeRoutes } from "./routes/forge.mjs";
+import { createForgeService } from "./services/forge-jobs.mjs";
 
 try { process.loadEnvFile(new URL("../.env", import.meta.url)); } catch { /* no .env → mock */ }
 
@@ -18,6 +21,12 @@ const USE_PIXELLAB_ANIM = ANIMATE_PROVIDER === "pixellab" && !!PIXELLAB_KEY;
 
 const app = express();
 app.use(express.json({ limit: "25mb" }));
+
+const forgeService = createForgeService({
+  pixelLab: createPixelLabClient({ token: PIXELLAB_KEY }),
+  configured: Boolean(PIXELLAB_KEY),
+});
+registerForgeRoutes(app, forgeService);
 
 /* ------------------------------ job store ------------------------------ */
 const jobs = new Map();
