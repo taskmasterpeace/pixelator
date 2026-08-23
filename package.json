@@ -9,6 +9,7 @@
     "web": "vite",
     "proxy": "node server/index.mjs",
     "build": "tsc -b && vite build",
+    "test": "node --experimental-strip-types --test src/**/*.test.ts server/**/*.test.mjs",
     "preview": "vite preview",
     "lint": "oxlint"
   },
