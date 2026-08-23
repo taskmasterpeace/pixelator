@@ -30,3 +30,7 @@ dist-ssr
 
 # Scratch / test artifacts
 *.b64
+
+# Generated forge packages and visual review sheets
+exports/
+review/
