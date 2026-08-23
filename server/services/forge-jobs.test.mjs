@@ -169,3 +169,63 @@ test("rejects processing an unknown local job id", async () => {
   const service = createForgeService({ pixelLab: {} });
   await assert.rejects(() => service.processJob("missing"), /no such forge job/i);
 });
+
+test("exports with the retained source identity and latest walk prompt", async () => {
+  const ids = ["identity-run-1", "walk-run-1"];
+  const character = {
+    id: "provider-character-1",
+    rotation_urls: {},
+    animations: [{
+      animation_type: "walk-8dir-4f",
+      directions: DIRECTIONS.map((direction) => ({
+        direction,
+        frame_count: 4,
+        frames: ["0.png", "1.png", "2.png", "3.png"],
+      })),
+    }],
+  };
+  const service = createForgeService({
+    makeId: () => ids.shift(),
+    pixelLab: {
+      async createCharacter() {
+        return { background_job_id: "identity-upstream", character_id: "provider-character-1" };
+      },
+      async animateWalk() {
+        return {
+          background_job_ids: DIRECTIONS.map((direction) => `walk-${direction}`),
+          directions: DIRECTIONS,
+        };
+      },
+      async pollJob(jobId) {
+        return { id: jobId, status: "completed", created_at: "2026-08-23T12:00:00Z" };
+      },
+      async getCharacter() {
+        return character;
+      },
+    },
+    async exportCharacter(input) {
+      return { zipBuffer: Buffer.from("zip"), manifest: { ...input, source: { name: input.source.name, bytes: input.source.buffer.length } } };
+    },
+  });
+  const identity = service.queueCharacter({
+    name: "road-survivor",
+    sourceName: "road-survivor-original.png",
+    description: "worn road survivor",
+    referenceImage: "data:image/png;base64,c291cmNl",
+    seed: 230823,
+  });
+  await service.processJob(identity.id);
+  const walk = service.queueWalk("provider-character-1", {
+    prompt: "walking with restrained survival weight",
+    seed: 230823,
+  });
+  await service.processJob(walk.id);
+
+  const exported = await service.exportCharacter("provider-character-1");
+
+  assert.equal(exported.manifest.characterId, "road-survivor");
+  assert.equal(exported.manifest.runId, "identity-run-1");
+  assert.equal(exported.manifest.prompt, "walking with restrained survival weight");
+  assert.equal(exported.manifest.seed, 230823);
+  assert.deepEqual(exported.manifest.source, { name: "road-survivor-original.png", bytes: 6 });
+});

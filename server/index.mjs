@@ -2,9 +2,11 @@
 // Primary provider: Retro Diffusion DIRECT API (rdpk- key) → real pixel art + animations.
 // Falls back to MOCK mode (procedural sprites) when no key is set, so the UI always works.
 import express from "express";
+import { fileURLToPath } from "node:url";
 import zlib from "node:zlib";
 import { createPixelLabClient } from "./providers/pixellab.mjs";
 import { registerForgeRoutes } from "./routes/forge.mjs";
+import { buildForgeExport } from "./services/forge-export.mjs";
 import { createForgeService } from "./services/forge-jobs.mjs";
 
 try { process.loadEnvFile(new URL("../.env", import.meta.url)); } catch { /* no .env → mock */ }
@@ -25,6 +27,10 @@ app.use(express.json({ limit: "25mb" }));
 const forgeService = createForgeService({
   pixelLab: createPixelLabClient({ token: PIXELLAB_KEY }),
   configured: Boolean(PIXELLAB_KEY),
+  exportCharacter: (input) => buildForgeExport({
+    ...input,
+    outputRoot: fileURLToPath(new URL("../exports", import.meta.url)),
+  }),
 });
 registerForgeRoutes(app, forgeService);
 

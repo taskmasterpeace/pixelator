@@ -60,4 +60,18 @@ export function registerForgeRoutes(app, service) {
     queueMicrotask(() => void service.processJob(job.id));
     return response.status(202).json(job);
   });
+
+  app.get("/api/forge/characters/:id/export", async (request, response) => {
+    if (!service.isConfigured) return unavailable(response);
+    try {
+      const exported = await service.exportCharacter(request.params.id);
+      const characterId = String(exported.manifest.characterId).replace(/[^a-z0-9_-]+/giu, "-");
+      const runId = String(exported.manifest.runId).replace(/[^a-z0-9_-]+/giu, "-");
+      response.setHeader("Content-Type", "application/zip");
+      response.setHeader("Content-Disposition", `attachment; filename="${characterId}-${runId}.zip"`);
+      return response.send(exported.zipBuffer);
+    } catch (error) {
+      return sendError(response, error);
+    }
+  });
 }

@@ -238,3 +238,23 @@ test("queues one eight-direction walk job for an existing character", async () =
     assert.equal(completed.result.directionCount, 8);
   });
 });
+
+test("downloads a validated forge package as a named ZIP", async () => {
+  const service = {
+    isConfigured: true,
+    async exportCharacter() {
+      return {
+        zipBuffer: Buffer.from("validated-forge-package"),
+        manifest: { characterId: "road-survivor", runId: "forge-1" },
+      };
+    },
+  };
+
+  await withServer(service, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/forge/characters/character-1/export`);
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get("content-type"), "application/zip");
+    assert.match(response.headers.get("content-disposition"), /road-survivor-forge-1\.zip/);
+    assert.equal(Buffer.from(await response.arrayBuffer()).toString("utf8"), "validated-forge-package");
+  });
+});

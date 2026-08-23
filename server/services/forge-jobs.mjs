@@ -18,7 +18,7 @@ function errorRecord(error) {
 
 export function createForgeService({
   pixelLab,
-  exportCharacter = null,
+  exportCharacter: exportBuilder = null,
   now = () => new Date().toISOString(),
   makeId = () => `forge_${randomUUID()}`,
   configured = true,
@@ -30,6 +30,9 @@ export function createForgeService({
   const jobs = new Map();
   const inputs = new Map();
   const characters = new Map();
+  const sourceRuns = new Map();
+  const walkSettings = new Map();
+  const exportsByCharacter = new Map();
   const active = new Map();
 
   function createJob(kind, characterId, input) {
@@ -81,6 +84,16 @@ export function createForgeService({
     update(job, { progress: 80 });
     const character = await pixelLab.getCharacter(job.characterId);
     characters.set(job.characterId, character);
+    sourceRuns.set(job.characterId, {
+      characterId: input.name,
+      runId: job.id,
+      source: {
+        name: input.sourceName || `${input.name}.png`,
+        buffer: Buffer.from(String(input.referenceImage || "").replace(/^data:image\/[a-z0-9.+-]+;base64,/iu, ""), "base64"),
+      },
+      prompt: input.description,
+      seed: input.seed,
+    });
     update(job, {
       status: "succeeded",
       progress: 100,
@@ -125,6 +138,7 @@ export function createForgeService({
 
     const character = await pixelLab.getCharacter(job.characterId);
     characters.set(job.characterId, character);
+    walkSettings.set(job.characterId, { prompt: input.prompt, seed: input.seed });
     const animation = (character.animations || []).find((candidate) =>
       candidate.animation_type === "walk-8dir-4f" ||
       candidate.display_name === "Walk · 8 directions · 4 frames",
@@ -197,13 +211,31 @@ export function createForgeService({
     },
 
     async exportCharacter(characterId, options = {}) {
-      if (typeof exportCharacter !== "function") {
+      if (typeof exportBuilder !== "function") {
         const error = new Error("Forge export service is not configured.");
         error.code = "EXPORT_NOT_CONFIGURED";
         throw error;
       }
+      const cached = exportsByCharacter.get(characterId);
+      if (cached) return cached;
+      const sourceRun = sourceRuns.get(characterId);
+      if (!sourceRun) {
+        const error = new Error("The original forge source is not available for this character.");
+        error.code = "FORGE_SOURCE_NOT_FOUND";
+        error.status = 409;
+        throw error;
+      }
+      const walk = walkSettings.get(characterId) || {};
       const character = await this.getCharacter(characterId);
-      return exportCharacter({ character, characterId, ...options });
+      const exported = await exportBuilder({
+        character,
+        ...sourceRun,
+        prompt: walk.prompt || sourceRun.prompt,
+        seed: walk.seed ?? sourceRun.seed,
+        ...options,
+      });
+      exportsByCharacter.set(characterId, exported);
+      return exported;
     },
   };
 }
